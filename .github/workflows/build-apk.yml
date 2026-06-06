@@ -24,41 +24,22 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
       - name: Install dependencies
         run: npm install --legacy-peer-deps
         working-directory: artifacts/nayan-tv
 
-      - name: Expo Prebuild
-        run: npx expo prebuild --platform android --no-install
+      - name: Build APK (EAS Local)
+        run: eas build --local --platform android --profile preview --non-interactive --output ./nayan-tv.apk
         working-directory: artifacts/nayan-tv
         env:
-          EXPO_NO_TELEMETRY: 1
-
-      - name: Create assets folder
-        run: mkdir -p app/src/main/assets
-        working-directory: artifacts/nayan-tv/android
-
-      - name: Bundle JS with Expo
-        run: |
-          npx expo export:embed \
-            --platform android \
-            --entry-file node_modules/expo-router/entry.js \
-            --bundle-output android/app/src/main/assets/index.android.bundle \
-            --assets-dest android/app/src/main/res \
-            --dev false
-        working-directory: artifacts/nayan-tv
-
-      - name: Make Gradlew executable
-        run: chmod +x ./gradlew
-        working-directory: artifacts/nayan-tv/android
-
-      - name: Build APK
-        run: ./gradlew assembleDebug --no-daemon -x bundleDebugJsAndAssets -x createBundleDebugJsAndAssets
-        working-directory: artifacts/nayan-tv/android
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Nayan-TV-APK
-          path: artifacts/nayan-tv/android/app/build/outputs/apk/debug/app-debug.apk
+          path: artifacts/nayan-tv/nayan-tv.apk
           retention-days: 30
