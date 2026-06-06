@@ -24,9 +24,6 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
       - name: Install dependencies
         run: npm install --legacy-peer-deps
         working-directory: artifacts/nayan-tv
@@ -37,25 +34,26 @@ jobs:
         env:
           EXPO_NO_TELEMETRY: 1
 
+      - name: Create assets folder
+        run: mkdir -p app/src/main/assets
+        working-directory: artifacts/nayan-tv/android
+
+      - name: Bundle JS with Expo
+        run: |
+          npx expo export:embed \
+            --platform android \
+            --entry-file node_modules/expo-router/entry.js \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res \
+            --dev false
+        working-directory: artifacts/nayan-tv
+
       - name: Make Gradlew executable
         run: chmod +x ./gradlew
         working-directory: artifacts/nayan-tv/android
 
-      - name: Bundle JS manually
-        run: |
-          mkdir -p app/src/main/assets
-          npx react-native bundle \
-            --platform android \
-            --dev false \
-            --entry-file node_modules/expo-router/entry.js \
-            --bundle-output app/src/main/assets/index.android.bundle \
-            --assets-dest app/src/main/res
-        working-directory: artifacts/nayan-tv/android
-        env:
-          NODE_PATH: ${{ github.workspace }}/artifacts/nayan-tv/node_modules
-
-      - name: Build APK (Debug)
-        run: ./gradlew assembleDebug --no-daemon -x bundleDebugJsAndAssets
+      - name: Build APK
+        run: ./gradlew assembleDebug --no-daemon -x bundleDebugJsAndAssets -x createBundleDebugJsAndAssets
         working-directory: artifacts/nayan-tv/android
 
       - name: Upload APK
