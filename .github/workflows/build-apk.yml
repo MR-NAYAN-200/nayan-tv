@@ -28,24 +28,39 @@ jobs:
         run: npm install -g pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: npm install --legacy-peer-deps
         working-directory: artifacts/nayan-tv
 
-      - name: Expo Prebuild (Generate Android project)
+      - name: Expo Prebuild
         run: npx expo prebuild --platform android --no-install
         working-directory: artifacts/nayan-tv
+        env:
+          EXPO_NO_TELEMETRY: 1
 
       - name: Make Gradlew executable
         run: chmod +x ./gradlew
         working-directory: artifacts/nayan-tv/android
 
-      - name: Build APK
-        run: ./gradlew assembleRelease --no-daemon
+      - name: Bundle JS manually
+        run: |
+          mkdir -p app/src/main/assets
+          npx react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file node_modules/expo-router/entry.js \
+            --bundle-output app/src/main/assets/index.android.bundle \
+            --assets-dest app/src/main/res
+        working-directory: artifacts/nayan-tv/android
+        env:
+          NODE_PATH: ${{ github.workspace }}/artifacts/nayan-tv/node_modules
+
+      - name: Build APK (Debug)
+        run: ./gradlew assembleDebug --no-daemon -x bundleDebugJsAndAssets
         working-directory: artifacts/nayan-tv/android
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Nayan-TV-APK
-          path: artifacts/nayan-tv/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: artifacts/nayan-tv/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
