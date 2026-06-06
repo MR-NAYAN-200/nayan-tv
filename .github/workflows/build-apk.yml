@@ -24,21 +24,34 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
         working-directory: artifacts/nayan-tv
 
-      - name: Build APK (EAS Local)
-        run: eas build --local --platform android --profile preview --non-interactive --output ./nayan-tv.apk
+      - name: Expo Prebuild
+        run: npx expo prebuild --platform android --no-install
         working-directory: artifacts/nayan-tv
         env:
-          EXPO_TOKEN: jB4q0BNRbNij31T7Lr-mntqcDYGbDl3CmQ66umMl
+          EXPO_NO_TELEMETRY: 1
+
+      - name: Make Gradlew executable
+        run: chmod +x ./gradlew
+        working-directory: artifacts/nayan-tv/android
+
+      - name: Build APK
+        run: |
+          export NODE_BINARY=$(which node)
+          ./gradlew assembleDebug --no-daemon
+        working-directory: artifacts/nayan-tv/android
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Nayan-TV-APK
-          path: artifacts/nayan-tv/nayan-tv.apk
+          path: artifacts/nayan-tv/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
